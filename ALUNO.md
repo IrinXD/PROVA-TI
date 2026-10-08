@@ -2,9 +2,9 @@
 
 # ALUNO
 
-Nome: Gabriel Andrade
+Nome: Gabriel Andrade Garcia
 
-RA: >>> PREENCHER <<<
+RA: 23271855-2
 
 Conta GitHub: @IrinXD
 
