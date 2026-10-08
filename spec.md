@@ -141,4 +141,125 @@ Bilhetes encerrados ou cancelados não podem retornar ao estado aberto. Um novo 
 - 422 `{"erro":"data_invalida"}` — data ausente ou inválida.
 
 **Aceite AC-04:** uma data válida retorna os quatro campos obrigatórios com os tipos corretos. O tempo médio considera os encerramentos do dia e aplica o arredondamento especificado.
+### RF-05 — Cancelar bilhete (UC5)
 
+**Endpoint:** `POST /bilhetes/{id}/cancelamento`
+
+**Comportamento:**
+
+- Somente bilhetes abertos podem ser cancelados.
+- Alterar o estado para `cancelado`.
+- Não gerar cobrança ou horário de saída.
+- Manter o bilhete disponível no histórico.
+
+**Resposta:** HTTP 200 com os dados do bilhete e `status: "cancelado"`, sem `saida` ou `valor_centavos`.
+
+**Erros:**
+
+- 404 `{"erro":"bilhete_nao_encontrado"}`.
+- 409 `{"erro":"bilhete_nao_aberto"}`.
+
+**Aceite AC-05:** cancelar um bilhete aberto retorna 200, registra o estado cancelado, não gera cobrança e libera a placa para um novo estacionamento.
+
+### RF-06 — Histórico por placa (UC6)
+
+**Endpoint:** `GET /bilhetes?placa=ABC1D23`
+
+**Entrada:** placa obrigatória no formato definido.
+
+**Comportamento:** localizar todos os bilhetes associados à placa, independentemente do estado, ordenados do mais recente ao mais antigo.
+
+**Resposta:** HTTP 200 com array JSON.
+
+**Erro:**
+
+- 422 `{"erro":"placa_invalida"}`.
+
+**Aceite AC-06:** retornar todos os registros da placa, incluindo abertos, encerrados e cancelados. Uma placa válida sem histórico retorna `[]`.
+
+## 5. Regras de negócio
+
+### RN-01 — Cálculo da cobrança (UC2 e UC7)
+
+Para bilhetes com permanência superior à tolerância:
+
+1. Calcular o tempo total entre entrada e saída.
+2. Dividir a duração por `FRACAO_MINUTOS`.
+3. Arredondar a quantidade de frações para cima.
+4. Multiplicar pelo valor de cada fração.
+5. Limitar o resultado a `TETO_DIARIO_CENTAVOS`.
+6. Retornar o resultado em centavos inteiros.
+
+O valor da fração é `400 / (60 / 30) = 200` centavos.
+
+> [!WARNING]
+> A tolerância não é descontada. Permanências de até 10 minutos são gratuitas. A partir do momento em que o limite é ultrapassado, cobra-se desde o primeiro minuto.
+
+**Exemplos verificáveis:**
+
+| Duração | Valor esperado |
+|---|---|
+| 0 minutos | 0 centavos |
+| 10 minutos | 0 centavos |
+| 11 minutos | 200 centavos |
+| 30 minutos | 200 centavos |
+| 31 minutos | 400 centavos |
+| 60 minutos | 400 centavos |
+| 61 minutos | 600 centavos |
+| 750 minutos | 5000 centavos |
+| 751 minutos | 5000 centavos |
+
+> [!WARNING]
+> O teto de 5000 centavos aplica-se individualmente a cada bilhete, mesmo quando a cobrança calculada ultrapassa esse valor.
+
+### RN-02 — Integridade da cobrança
+
+- O valor calculado não pode superar o teto.
+- Bilhetes cancelados não produzem cobrança.
+- O encerramento não pode cobrar duas vezes o mesmo bilhete.
+- Valores monetários devem permanecer inteiros.
+
+**Aceite AC-07:** todos os limites e resultados definidos na tabela de RN-01 são respeitados.
+
+### RN-03 — Exclusividade de placa (UC8)
+
+Uma placa só pode possuir um bilhete com status aberto simultaneamente.
+
+- Uma segunda abertura para a mesma placa deve retornar HTTP 409 com `{"erro":"bilhete_em_aberto"}`.
+- Bilhetes encerrados ou cancelados não impedem novas aberturas.
+- A regra deve permanecer válida mesmo diante de requisições concorrentes.
+
+**Aceite AC-08:** duas tentativas de abertura simultâneas para uma mesma placa não podem resultar em dois bilhetes abertos.
+
+## 6. Validação e tratamento de erros
+
+Todos os erros definidos no contrato devem retornar um objeto JSON contendo a propriedade `erro`.
+
+| Situação | HTTP | Código |
+|---|---|---|
+| Placa ausente ou inválida | 422 | `placa_invalida` |
+| Entrada inválida | 422 | `entrada_invalida` |
+| Data inválida | 422 | `data_invalida` |
+| Bilhete inexistente | 404 | `bilhete_nao_encontrado` |
+| Encerramento duplicado | 409 | `bilhete_ja_encerrado` |
+| Cancelamento de bilhete não aberto | 409 | `bilhete_nao_aberto` |
+| Placa com bilhete aberto | 409 | `bilhete_em_aberto` |
+
+**Precedência obrigatória:** validações de formato (422) devem ocorrer antes das verificações de conflito de negócio (409).
+
+Não substituir os códigos de erro contratuais por mensagens personalizadas.
+
+## 7. Critérios gerais de aceite
+
+A API será considerada funcional quando:
+
+- **AC-G01:** todos os endpoints RF-01 a RF-06 responderem nos caminhos e métodos definidos.
+- **AC-G02:** os comportamentos UC7 e UC8 forem respeitados.
+- **AC-G03:** todos os códigos HTTP e nomes de campos corresponderem ao contrato.
+- **AC-G04:** horários de resposta estiverem em ISO-8601 com fuso `-03:00`.
+- **AC-G05:** os cálculos respeitarem os parâmetros reais da variante.
+- **AC-G06:** dados e estados permanecerem consistentes entre operações e consultas.
+- **AC-G07:** respostas de erro utilizarem os identificadores exatos.
+- **AC-G08:** as operações funcionarem independentemente de interface gráfica.
+
+A arquitetura, persistência, dependências e procedimentos de execução serão definidos no `plan.md`. Os cenários detalhados de verificação serão definidos no `tests.md`.
