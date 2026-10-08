@@ -1,4 +1,29 @@
 # Prova 01 · Track 01 — Spec-Driven Development (Zona Azul Digital)
+nstruções para a IA
+
+Antes de implementar, leia integralmente:
+
+contrato.json e variante/params.json — contrato e parâmetros oficiais.
+
+constitution.md — regras obrigatórias.
+
+spec.md — requisitos e funcionalidades.
+
+plan.md — arquitetura e tecnologias.
+
+tests.md — testes e resultados esperados.
+
+tasks.md — sequência de implementação.
+
+Execução
+
+Siga o tasks.md para gerar a aplicação completa, executar os testes, corrigir falhas e validar o container.
+
+Respeite exatamente o contrato REST e os parâmetros da variante. Não altere arquivos oficiais ou protegidos.
+
+A API deverá estar acessível em http://localhost:8001.
+
+Ao finalizar, apresente um resumo das funcionalidades implementadas, testes executados e possíveis pendências.
 
 > No momento da aplicação, esta pasta virou o **seu repositório** (enunciado,
 > contrato e rubrica estão na raiz). O esqueleto com os workflows de correção
