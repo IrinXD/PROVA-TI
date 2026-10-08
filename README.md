@@ -1,5 +1,5 @@
 # Prova 01 · Track 01 — Spec-Driven Development (Zona Azul Digital)
-nstruções para a IA
+Instruções para a IA
 
 Antes de implementar, leia integralmente:
 
@@ -24,6 +24,9 @@ Respeite exatamente o contrato REST e os parâmetros da variante. Não altere ar
 A API deverá estar acessível em http://localhost:8001.
 
 Ao finalizar, apresente um resumo das funcionalidades implementadas, testes executados e possíveis pendências.
+
+
+----------
 
 > No momento da aplicação, esta pasta virou o **seu repositório** (enunciado,
 > contrato e rubrica estão na raiz). O esqueleto com os workflows de correção
